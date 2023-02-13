@@ -68,6 +68,9 @@ void loop()
     stepperSpeed = 0;
   }
 
+
+  //-----------------------------------------
+  // HTTP REQUEST 
   if(WiFi.status()== WL_CONNECTED ){ 
       HTTPClient http;
       http.begin(serverNameSTEP.c_str());
@@ -88,6 +91,9 @@ void loop()
         Serial.println(httpResponseCode);
       Serial.println();
     }
+  //-----------------------------------------
+
+  
   int packetSize = Udp.parsePacket();
   if (packetSize) {
     int len = Udp.read(packetBuffer, 255);
