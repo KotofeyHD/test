@@ -14,12 +14,14 @@ IPAddress subnet(255, 255, 0, 0);
 IPAddress primaryDNS(8, 8, 8, 8);
 IPAddress secondaryDNS(8, 8, 4, 4);
 
+const char * udpAddress = "192.168.4.10";
+
+
 void init_wifi_sta(void);
 void init_udp_socket(void);
 
 int udp_sock_port = 9090;
 WiFiUDP udp_sock;
-
 
 // STEPPER MOTOR PARAMETERS
 
@@ -54,24 +56,36 @@ void loop() {
   proc_udp_socket();
 
   if(stepperStart) {
-      Serial.println("mstart");
-      Serial.flush();
-      
-      stepper_0.setSpeed(stepperSpeed);
-      stepper_0.setMaxSpeed(stepperSpeed);
-      stepper_0.move(stepperPosition);
-      while(stepper_0.distanceToGo() != 0) {
-        stepper_0.run();
-      }
-      
-      Serial.println("mend");
-      Serial.flush();
-      stepperStart = false;
-      stepperPosition = 0;
-      stepperSpeed = 0;   
+    Serial.println("mstart");
+    Serial.flush();
+
+    //сообщаем, что пакет отправлен 
+    udp_sock.beginPacket(udp_sock.remoteIP(),9091);
+    udp_sock.print("mstart");
+    udp_sock.endPacket();
+
+    stepper_0.setSpeed(stepperSpeed);
+    stepper_0.setMaxSpeed(stepperSpeed);
+    stepper_0.setAcceleration(stepperSpeed);
+    stepper_0.move(stepperPosition);
+    while(stepper_0.distanceToGo() != 0) {
+      stepper_0.run();
+    }
+    
+    Serial.println("mend");
+    Serial.flush();
+    udp_sock.beginPacket(udp_sock.remoteIP(),9091);
+    udp_sock.print("mend");
+    udp_sock.endPacket();
+    stepperStart = false;
+    stepperPosition = 0;
+    stepperSpeed = 0;   
   }
     
 }
+
+// PD -> T -> PT1 -> D
+// T -> PT2 -> D
 
 // FUNCTIONS
 
@@ -128,7 +142,6 @@ void proc_udp_socket() {
   if (len == sizeof(control_packet_udp_sock_t)) {
 
     if ( p_control_packet_0->magic_number == 666666 ) {
-      udp_sock.beginPacket(udp_sock.remoteIP(),udp_sock.remotePort());
       if ( ( p_control_packet_0->stepper_position != 0 ) && ( p_control_packet_0->stepper_speed != 0 ) ) {
         stepperStart = true;
         stepperPosition = p_control_packet_0->stepper_position;
@@ -141,18 +154,14 @@ void proc_udp_socket() {
         Serial.print("received.stepperSpeed = ");
         Serial.println(stepperSpeed);
         Serial.flush();
-        
-        udp_sock.printf("parsed\r\n");
+    
         
       } else {
         stepperStart = false;
         stepperPosition = 0;
         stepperSpeed = 0;
-        udp_sock.printf("fail\r\n");
-      }
-      udp_sock.endPacket();         
-    }
-  
+      }        
+    }  
   }
   
 }
