@@ -13,8 +13,16 @@ int  packetSize = 0;
 char inputBuf[INPUT_SIZE + 1];
 char packetBuffer[INPUT_SIZE + 1];
 
-const char *ssid = "BB9ESERVER";  
-const char *password = "BB9ESERVER";
+const char* wifi_sta_ssid = "BB9ESERVER"; // type your wifi name
+const char* wifi_sta_password = "BB9ESERVER";  // type your wifi password
+
+IPAddress self_ip(192, 168, 4, 100);
+IPAddress gateway(192, 168, 4, 1);
+IPAddress subnet(255, 255, 0, 0);
+IPAddress primaryDNS(8, 8, 8, 8);
+IPAddress secondaryDNS(8, 8, 4, 4);
+
+void init_wifi_sta(void);
 
 WiFiUDP udp;
 WiFiUDP udp2;
@@ -23,9 +31,9 @@ void setup()
 {
  
   Serial.begin(115200); // set up Serial library at 9600 bps
-
-  WiFi.softAP(ssid, password);  // ESP-32 as access point
   
+  init_wifi_sta();
+
   udp2.begin(9091);  
 
   Serial.setTimeout(10);
@@ -44,7 +52,7 @@ typedef struct {
 
 control_packet_udp_sock_t ctrl_pack_0;
 
-const char * udpAddress = "192.168.4.100";
+const char * udpAddress = "192.168.4.1";
 const int udpPort = 9090;
 
 bool isSerialAvailable();
@@ -138,6 +146,29 @@ void loop()
 
 }
 
+// FUNCTIONS
+
+void init_wifi_sta(void) {
+  
+  Serial.print("Connecting to ");
+  Serial.println(wifi_sta_ssid);
+  
+  if (!WiFi.config(self_ip, gateway, subnet, primaryDNS, secondaryDNS)) {
+    Serial.println("STA Failed to configure");
+  }
+  
+  WiFi.begin(wifi_sta_ssid, wifi_sta_password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  // Print local IP address and start web server
+  Serial.println("");
+  Serial.println("WiFi connected.");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
 bool isSerialAvailable()
 {
   if ( !Serial.available() )
@@ -186,4 +217,3 @@ bool isSerialAvailable()
     return false;
   }
 }
-  

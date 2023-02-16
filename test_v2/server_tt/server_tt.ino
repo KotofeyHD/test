@@ -4,20 +4,10 @@
 #include <AccelStepper.h>
 
 // WIFI STA PARAMETERS
-
-const char* wifi_sta_ssid = "BB9ESERVER"; // type your wifi name
-const char* wifi_sta_password = "BB9ESERVER";  // type your wifi password
-
-IPAddress self_ip(192, 168, 4, 100);
-IPAddress gateway(192, 168, 4, 1);
-IPAddress subnet(255, 255, 0, 0);
-IPAddress primaryDNS(8, 8, 8, 8);
-IPAddress secondaryDNS(8, 8, 4, 4);
-
-const char * udpAddress = "192.168.4.10";
+const char *ssid = "BB9ESERVER";  
+const char *password = "BB9ESERVER";
 
 
-void init_wifi_sta(void);
 void init_udp_socket(void);
 
 int udp_sock_port = 9090;
@@ -39,12 +29,16 @@ AccelStepper stepper_0(motorInterfaceType, STEP, DIR);
 // 
 
 void setup() {
-  
-  init_wifi_sta();
-  init_udp_socket();
 
   Serial.begin(115200);
   
+  WiFi.softAP(ssid, password);  // ESP-32 as access point
+
+  init_udp_socket();
+  
+  Serial.setTimeout(10);
+  Serial.println("tl");
+
   stepper_0.setMaxSpeed(10000);
   stepper_0.setAcceleration(5000);
   stepper_0.setSpeed(10000); 
@@ -86,29 +80,6 @@ void loop() {
 
 // PD -> T -> PT1 -> D
 // T -> PT2 -> D
-
-// FUNCTIONS
-
-void init_wifi_sta(void) {
-  
-  Serial.print("Connecting to ");
-  Serial.println(wifi_sta_ssid);
-  
-  if (!WiFi.config(self_ip, gateway, subnet, primaryDNS, secondaryDNS)) {
-    Serial.println("STA Failed to configure");
-  }
-  
-  WiFi.begin(wifi_sta_ssid, wifi_sta_password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  // Print local IP address and start web server
-  Serial.println("");
-  Serial.println("WiFi connected.");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-}
 
 void init_udp_socket(void) {
   udp_sock.begin(udp_sock_port);  
